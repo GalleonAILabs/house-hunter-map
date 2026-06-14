@@ -41,7 +41,7 @@ fillColor:'#ff6600',fillOpacity:.7,weight:1}).bindPopup('<b>'+e(i.name)+'</b><br
 var b=[];
 DATA.properties.forEach(function(p){b.push([p.lat,p.lon]);
 var fit=e(p.fit),fc=fit.indexOf('8/8')===0?' class="fit-pass"':'';
-var gmaps='https://www.google.com/maps/search/?api=1&query='+p.lat+','+p.lon;
+var gmaps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.address);
 var h='<b>'+e(p.address)+'</b><br>Price: '+e(p.price)+'<br><span'+fc+'>Fit: '+fit
 +'</span><br>Beds: '+e(p.beds)+' &nbsp; Baths: '+e(p.baths)+'<br>Sqft: '+e(p.sqft)
 +' &nbsp; Lot: '+e(p.lot)+(p.acres?' ('+e(p.acres)+' ac)':'')
