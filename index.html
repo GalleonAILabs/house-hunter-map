@@ -11,6 +11,9 @@ html,body{margin:0;height:100%;font-family:-apple-system,Segoe UI,Roboto,sans-se
 border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:14px;max-width:60vw}
 .panel b{font-size:15px}
 .panel select{font-size:14px;padding:2px}
+.ptitle{cursor:pointer}
+#panelBody{margin-top:5px}
+.panel.min #panelBody{display:none}
 .search{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;
 background:#fff;padding:6px 8px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.3)}
 .search input{font-size:14px;padding:4px 6px;width:200px;border:1px solid #ccc;border-radius:5px}
@@ -49,7 +52,9 @@ position:sticky;top:0;background:#fff;border-radius:8px 8px 0 0}
 <input id="q" type="text" placeholder="Search town or address" autocomplete="off">
 <button id="qgo">Go</button><button id="qclear">Clear pin</button><span class="smsg" id="smsg"></span>
 </div>
-<div class="panel"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span><br>
+<div class="panel" id="panel">
+<div class="ptitle" id="ptoggle"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span> <span id="pchev">&#9660;</span></div>
+<div id="panelBody">
 I am: <select id="who">
 <option value="Mark">Mark</option><option value="Katie">Katie</option>
 <option value="Realtor">Realtor</option></select>
@@ -57,7 +62,7 @@ I am: <select id="who">
 <span class="st" style="color:#2e9e2e">&#9733;</span>one 5
 <i style="background:#137333"></i>top 5
 <i style="background:#c5221f"></i>bottom 5 <i style="background:#1a73e8"></i>other
-<i style="background:#9e9e9e"></i>said no</div></div>
+<i style="background:#9e9e9e"></i>said no</div></div></div>
 <div id="map"></div>
 <div class="fpanel" id="fpanel">
   <div class="ftitle" id="ftoggle">Filters <span id="fchev">&#9660;</span></div>
@@ -86,6 +91,23 @@ document.getElementById('fchev').innerHTML='&#9654;';
 document.getElementById('ftoggle').onclick=function(){
   var min=fpanel.classList.toggle('min');
   document.getElementById('fchev').innerHTML=min?'&#9654;':'&#9660;';
+};
+
+// Info panel minimize toggle. On narrow screens it overlaps the search box, so
+// it starts minimized on phones (<=640px wide) and expanded on desktop. The
+// chevron in the title bar collapses it to just the title. Choice is remembered.
+var panel=document.getElementById('panel');
+function setPanelMin(min){
+  panel.classList.toggle('min',min);
+  document.getElementById('pchev').innerHTML=min?'&#9654;':'&#9660;';
+}
+var savedPanel=localStorage.getItem('hh_panel_min');
+var startMin=savedPanel!==null?(savedPanel==='1'):(window.innerWidth<=640);
+setPanelMin(startMin);
+document.getElementById('ptoggle').onclick=function(){
+  var min=!panel.classList.contains('min');
+  setPanelMin(min);
+  localStorage.setItem('hh_panel_min',min?'1':'0');
 };
 
 var map=L.map('map',{zoomControl:true}).setView([44.1,-79.6],9);
