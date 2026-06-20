@@ -12,6 +12,10 @@ border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:14px;max-width:6
 .panel b{font-size:15px}
 .panel select{font-size:14px;padding:2px}
 .ptitle{cursor:pointer}
+.pmin{display:none;font-weight:600}
+.panel.min .pfull{display:none}
+.panel.min .pmin{display:inline}
+.panel.min{padding:6px 10px}
 #panelBody{margin-top:5px}
 .panel.min #panelBody{display:none}
 .search{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;
@@ -40,6 +44,14 @@ position:sticky;top:0;background:#fff;border-radius:8px 8px 0 0}
 .frow i{display:inline-block;width:11px;height:11px;border-radius:50%}
 .frow i.stsw{width:auto;height:auto;border-radius:0;font-size:13px;line-height:1}
 .fpanel.min #filterBody{display:none}
+@media (max-width:640px){
+  .search input{width:110px}
+  .search{padding:5px 6px}
+  .search button{padding:4px 6px}
+  #qclear{font-size:0}
+  #qclear::after{content:"\2715";font-size:14px}
+  .panel{max-width:42vw}
+}
 .acts{margin-top:7px;border-top:1px solid #eee;padding-top:6px}
 .actrow{display:flex;align-items:center;gap:5px;margin:4px 0;flex-wrap:wrap}
 .acts .clk{cursor:pointer;color:#f5b301;font-size:18px;line-height:1}
@@ -53,7 +65,7 @@ position:sticky;top:0;background:#fff;border-radius:8px 8px 0 0}
 <button id="qgo">Go</button><button id="qclear">Clear pin</button><span class="smsg" id="smsg"></span>
 </div>
 <div class="panel" id="panel">
-<div class="ptitle" id="ptoggle"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span> <span id="pchev">&#9660;</span></div>
+<div class="ptitle" id="ptoggle"><span class="pfull"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span></span><span class="pmin">&#8505; Info</span> <span id="pchev">&#9660;</span></div>
 <div id="panelBody">
 I am: <select id="who">
 <option value="Mark">Mark</option><option value="Katie">Katie</option>
