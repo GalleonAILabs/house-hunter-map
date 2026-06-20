@@ -576,7 +576,8 @@ function render(data){
   // Must-have toggles from the family brief. When ON, each requires its test to
   // pass; a pin with no parseable value for that field fails the must-have.
   var must={beds4:false,sqft1800:false,go20:false,acre05:false};
-  var featText='';  // features keyword (lowercase substring)
+  var featText='';  // features keyword (lowercase substring) - must be present
+  var featExclude='';  // features keyword that must be ABSENT (e.g. "pool")
   // "Both like": independent minimum-star thresholds per person. null = Any (no
   // constraint). A pin passes only if Mark's rating >= markMin AND Katie's >=
   // katieMin (each threshold ignored when null). Unrated counts as not meeting
@@ -641,6 +642,7 @@ function render(data){
       if(researchFilter==='ready' && pin.research!=='ready')return;
       if(researchFilter==='any' && !(pin.research==='pending'||pin.research==='ready'))return;
       if(featText && pin.features.indexOf(featText)<0)return;
+      if(featExclude && pin.features.indexOf(featExclude)>=0)return;
       gProps.addLayer(pin.marker);shown++;
     });
     if(showLines)gLines.addTo(map); else map.removeLayer(gLines);
@@ -659,7 +661,7 @@ function render(data){
       localStorage.setItem('hh_filters',JSON.stringify({
         cat:catState, rate:rateState, must:must,
         layers:{lines:showLines,stn:showStn,hwy:showHwy},
-        ranges:rng, feat:featEl?featEl.value:'', research:researchFilter, markMin:markMin, katieMin:katieMin, notes:noteFilter}));
+        ranges:rng, feat:featEl?featEl.value:'', featEx:featExEl?featExEl.value:'', research:researchFilter, markMin:markMin, katieMin:katieMin, notes:noteFilter}));
     }catch(e){}
   }
   function loadFilters(){
@@ -676,6 +678,7 @@ function render(data){
       var sv=s.ranges[rk];rangeEls[rk].mn.value=sv.mn||'';rangeEls[rk].mx.value=sv.mx||'';
       ranges[rk].min=parseNum(sv.mn);ranges[rk].max=parseNum(sv.mx);}}
     if(typeof s.feat==='string'&&featEl){featEl.value=s.feat;featText=s.feat.trim().toLowerCase();}
+    if(typeof s.featEx==='string'&&featExEl){featExEl.value=s.featEx;featExclude=s.featEx.trim().toLowerCase();}
     if(typeof s.research==='string'){researchFilter=s.research;
       var rsel=document.getElementById('rschFilter'); if(rsel)rsel.value=s.research;}
     function setSel(id,val){var el=document.getElementById(id);if(el)el.value=(val==null?'':String(val));}
@@ -750,6 +753,13 @@ function render(data){
   fp.appendChild(frow);
   var featEl=frow.querySelector('.feat');
   featEl.addEventListener('input',function(){featText=featEl.value.trim().toLowerCase();applyFilters();});
+  var fxlab=document.createElement('div');fxlab.className='rnglab';fxlab.textContent='Exclude (not included)';
+  fp.appendChild(fxlab);
+  var fxrow=document.createElement('div');fxrow.className='prow';
+  fxrow.innerHTML='<input class="pin featx" placeholder="e.g. pool, septic, well">';
+  fp.appendChild(fxrow);
+  var featExEl=fxrow.querySelector('.featx');
+  featExEl.addEventListener('input',function(){featExclude=featExEl.value.trim().toLowerCase();applyFilters();});
 
   hdr('Research');
   var rrow=document.createElement('div');rrow.className='prow';
@@ -784,6 +794,7 @@ function render(data){
     for(var k in ranges){ranges[k].min=null;ranges[k].max=null;}
     must.beds4=must.sqft1800=must.go20=must.acre05=false;
     featText='';
+    featExclude='';
     researchFilter='all';
     var rsel=document.getElementById('rschFilter'); if(rsel)rsel.value='all';
     markMin=null;katieMin=null;
