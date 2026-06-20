@@ -575,6 +575,11 @@ function render(data){
   // pass; a pin with no parseable value for that field fails the must-have.
   var must={beds4:false,sqft1800:false,go20:false,acre05:false};
   var featText='';  // features keyword (lowercase substring)
+  // "Both like": show only listings Mark AND Katie each rated >=4 (a shared like).
+  var bothLikeOnly=false;
+  function bothLike(pin){
+    return pin.mark!=null&&pin.mark>=4&&pin.katie!=null&&pin.katie>=4;
+  }
 
   function myRating(pin){
     var w=WHO();
@@ -611,6 +616,7 @@ function render(data){
       }
       if(!passRanges(pin))return;
       if(!passMust(pin))return;
+      if(bothLikeOnly && !bothLike(pin))return;
       if(researchFilter==='pending' && pin.research!=='pending')return;
       if(researchFilter==='ready' && pin.research!=='ready')return;
       if(researchFilter==='any' && !(pin.research==='pending'||pin.research==='ready'))return;
@@ -633,7 +639,7 @@ function render(data){
       localStorage.setItem('hh_filters',JSON.stringify({
         cat:catState, rate:rateState, must:must,
         layers:{lines:showLines,stn:showStn,hwy:showHwy},
-        ranges:rng, feat:featEl?featEl.value:'', research:researchFilter}));
+        ranges:rng, feat:featEl?featEl.value:'', research:researchFilter, bothLike:bothLikeOnly}));
     }catch(e){}
   }
   function loadFilters(){
@@ -652,6 +658,7 @@ function render(data){
     if(typeof s.feat==='string'&&featEl){featEl.value=s.feat;featText=s.feat.trim().toLowerCase();}
     if(typeof s.research==='string'){researchFilter=s.research;
       var rsel=document.getElementById('rschFilter'); if(rsel)rsel.value=s.research;}
+    if(typeof s.bothLike==='boolean'){bothLikeOnly=s.bothLike;setCb('bothlike',s.bothLike);}
   }
 
   var fp=document.getElementById('filterBody');
@@ -747,6 +754,8 @@ function render(data){
     applyFilters();
   };
 
+  hdr('Shared');
+  row('Both like (Mark + Katie \u2265 4\u2605)',false,function(v){bothLikeOnly=v;applyFilters();},starsw('#f5b301'),'bothlike');
   hdr('Category');
   row('Your 5-star',true,function(v){catState.gold=v;applyFilters();},starsw('#f5b301'),'cat:gold');
   row('Your 1-4 star',true,function(v){catState.greenstar=v;applyFilters();},starsw('#2e9e2e'),'cat:greenstar');
