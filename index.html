@@ -79,7 +79,7 @@ position:sticky;top:0;background:#fff;border-radius:8px 8px 0 0}
 <button id="qgo">Go</button><button id="qclear">Clear pin</button><span class="smsg" id="smsg"></span>
 </div>
 <div class="panel" id="panel">
-<div class="ptitle" id="ptoggle"><span class="pfull"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span></span><span class="pmin">&#8505; Info</span> <span id="pchev">&#9660;</span></div>
+<div class="ptitle" id="ptoggle"><span class="pfull"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span></span><span class="pmin">&#128100; <span id="pminName">Mark</span></span> <span id="pchev">&#9660;</span></div>
 <div id="panelBody">
 I am: <select id="who">
 <option value="Mark">Mark</option><option value="Katie">Katie</option>
@@ -110,7 +110,14 @@ var WEBAPP = "https://script.google.com/macros/s/AKfycbw0zEOe3ZVsKvPXL_8895EKgnc
 
 var whoSel=document.getElementById('who');
 whoSel.value=localStorage.getItem('hh_who')||'Mark';
-whoSel.onchange=function(){localStorage.setItem('hh_who',whoSel.value);};
+// Reflect the chosen identity in the collapsed header label, so when the info
+// panel is minimized you still see WHO you are ("as Katie") without expanding.
+function syncWhoLabel(){
+  var el=document.getElementById('pminName');
+  if(el)el.textContent=whoSel.value;
+}
+syncWhoLabel();
+whoSel.onchange=function(){localStorage.setItem('hh_who',whoSel.value);syncWhoLabel();};
 function WHO(){return whoSel.value;}
 
 // Filter panel minimize toggle (starts minimized to stay out of the way).
