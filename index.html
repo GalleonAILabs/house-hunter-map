@@ -575,10 +575,10 @@ function render(data){
   // pass; a pin with no parseable value for that field fails the must-have.
   var must={beds4:false,sqft1800:false,go20:false,acre05:false};
   var featText='';  // features keyword (lowercase substring)
-  // "Both like": show only listings Mark AND Katie each rated >=4 (a shared like).
+  // "Both like": show only listings Mark rated >=3 AND Katie rated >=4.
   var bothLikeOnly=false;
   function bothLike(pin){
-    return pin.mark!=null&&pin.mark>=4&&pin.katie!=null&&pin.katie>=4;
+    return pin.mark!=null&&pin.mark>=3&&pin.katie!=null&&pin.katie>=4;
   }
 
   function myRating(pin){
@@ -755,7 +755,7 @@ function render(data){
   };
 
   hdr('Shared');
-  row('Both like (Mark + Katie \u2265 4\u2605)',false,function(v){bothLikeOnly=v;applyFilters();},starsw('#f5b301'),'bothlike');
+  row('Both like (Mark \u2265 3\u2605, Katie \u2265 4\u2605)',false,function(v){bothLikeOnly=v;applyFilters();},starsw('#f5b301'),'bothlike');
   hdr('Category');
   row('Your 5-star',true,function(v){catState.gold=v;applyFilters();},starsw('#f5b301'),'cat:gold');
   row('Your 1-4 star',true,function(v){catState.greenstar=v;applyFilters();},starsw('#2e9e2e'),'cat:greenstar');
