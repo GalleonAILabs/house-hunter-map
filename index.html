@@ -130,6 +130,14 @@ document.getElementById('ptoggle').onclick=function(){
 };
 
 var map=L.map('map',{zoomControl:true}).setView([44.1,-79.6],9);
+// Popup options: cap height so a tall card scrolls INSIDE the popup (its top
+// stays reachable), and pad the top auto-pan so Leaflet never parks the card's
+// top behind the floating search bar (~60px tall at top:10px).
+function POPOPTS(){
+  var h=Math.max(220, (window.innerHeight||600)-150);
+  return {maxHeight:h, autoPanPaddingTopLeft:L.point(12,78),
+          autoPanPaddingBottomRight:L.point(12,60)};
+}
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 {attribution:'&copy; OpenStreetMap',maxZoom:19}).addTo(map);
 var LC={'Barrie':'#0072C0','Lakeshore West':'#00B050','Lakeshore East':'#548235',
@@ -354,11 +362,11 @@ function render(data){
     var col=bothFive?'#f5b301':'#2e9e2e';
     var icon=L.divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],
       html:'<div class="pinstar" style="color:'+col+'">\u2605</div>'});
-    marker=L.marker([p.lat,p.lon],{icon:icon}).bindPopup(div);
+    marker=L.marker([p.lat,p.lon],{icon:icon}).bindPopup(div,POPOPTS());
     tier=bothFive?'gold':'greenstar';
   } else {
     marker=L.circleMarker([p.lat,p.lon],{radius:9,color:'#fff',weight:2,fillColor:pc,
-    fillOpacity:rejected?0.55:1}).bindPopup(div);
+    fillOpacity:rejected?0.55:1}).bindPopup(div,POPOPTS());
     tier=rejected?'grey':(isTop?'top':(isBot?'bottom':'other'));
   }
   thisPin.marker=marker; thisPin.tier=tier;
