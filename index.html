@@ -456,7 +456,9 @@ function render(data){
     features:String(p.features||'').toLowerCase(),
     statusRaw:String(p.status||'').toLowerCase(),
     mark:(p.markRank===''||p.markRank==null)?null:parseInt(p.markRank,10),
-    katie:(p.katieRank===''||p.katieRank==null)?null:parseInt(p.katieRank,10)};
+    katie:(p.katieRank===''||p.katieRank==null)?null:parseInt(p.katieRank,10),
+    hasMarkNote:!!stripResearch(p.markComments),
+    hasKatieNote:!!stripResearch(p.katieComments)};
   var s=styleFor(p);
   var rejected=s.rejected, vr=s.vr, bothFive=s.bothFive,
       isTop=s.isTop, isBot=s.isBot, pc=s.pc;
@@ -585,6 +587,18 @@ function render(data){
     if(katieMin!=null && !(pin.katie!=null&&pin.katie>=katieMin))return false;
     return true;
   }
+  // Notes filter: 'all' (no filter), 'any' (Mark OR Katie has a note),
+  // 'mark' (Mark has a note), 'katie' (Katie has a note), 'both' (both do).
+  // "Note" = comment text remaining after research/reviewed tags are stripped.
+  var noteFilter='all';
+  function passNotes(pin){
+    if(noteFilter==='all')return true;
+    if(noteFilter==='any')return pin.hasMarkNote||pin.hasKatieNote;
+    if(noteFilter==='mark')return pin.hasMarkNote;
+    if(noteFilter==='katie')return pin.hasKatieNote;
+    if(noteFilter==='both')return pin.hasMarkNote&&pin.hasKatieNote;
+    return true;
+  }
 
   function myRating(pin){
     var w=WHO();
@@ -622,6 +636,7 @@ function render(data){
       if(!passRanges(pin))return;
       if(!passMust(pin))return;
       if(!passBoth(pin))return;
+      if(!passNotes(pin))return;
       if(researchFilter==='pending' && pin.research!=='pending')return;
       if(researchFilter==='ready' && pin.research!=='ready')return;
       if(researchFilter==='any' && !(pin.research==='pending'||pin.research==='ready'))return;
@@ -644,7 +659,7 @@ function render(data){
       localStorage.setItem('hh_filters',JSON.stringify({
         cat:catState, rate:rateState, must:must,
         layers:{lines:showLines,stn:showStn,hwy:showHwy},
-        ranges:rng, feat:featEl?featEl.value:'', research:researchFilter, markMin:markMin, katieMin:katieMin}));
+        ranges:rng, feat:featEl?featEl.value:'', research:researchFilter, markMin:markMin, katieMin:katieMin, notes:noteFilter}));
     }catch(e){}
   }
   function loadFilters(){
@@ -666,6 +681,8 @@ function render(data){
     function setSel(id,val){var el=document.getElementById(id);if(el)el.value=(val==null?'':String(val));}
     if('markMin' in s){markMin=(s.markMin==null?null:parseInt(s.markMin,10));setSel('markMin',markMin);}
     if('katieMin' in s){katieMin=(s.katieMin==null?null:parseInt(s.katieMin,10));setSel('katieMin',katieMin);}
+    if(typeof s.notes==='string'){noteFilter=s.notes;
+      var nsel=document.getElementById('noteFilter'); if(nsel)nsel.value=s.notes;}
   }
 
   var fp=document.getElementById('filterBody');
@@ -746,6 +763,19 @@ function render(data){
   rrow.querySelector('#rschFilter').addEventListener('change',function(){
     researchFilter=this.value;applyFilters();});
 
+  hdr('Notes');
+  var nrow=document.createElement('div');nrow.className='prow';
+  nrow.innerHTML='<select class="pin" id="noteFilter" style="width:100%">'
+    +'<option value="all">Show all</option>'
+    +'<option value="any">Has a note (Mark or Katie)</option>'
+    +'<option value="mark">Mark has a note</option>'
+    +'<option value="katie">Katie has a note</option>'
+    +'<option value="both">Both have notes</option>'
+    +'</select>';
+  fp.appendChild(nrow);
+  nrow.querySelector('#noteFilter').addEventListener('change',function(){
+    noteFilter=this.value;applyFilters();});
+
   // Reset everything (ranges, must-haves, keyword, research) in one tap.
   var resetRow=document.createElement('div');resetRow.className='prow';
   resetRow.innerHTML='<button class="pclr" id="freset">Reset all filters</button>';
@@ -759,6 +789,8 @@ function render(data){
     markMin=null;katieMin=null;
     var mm=document.getElementById('markMin');if(mm)mm.value='';
     var km=document.getElementById('katieMin');if(km)km.value='';
+    noteFilter='all';
+    var nsel=document.getElementById('noteFilter'); if(nsel)nsel.value='all';
     fp.querySelectorAll('.pin').forEach(function(i){if(i.tagName!=='SELECT')i.value='';});
     mustBoxes.forEach(function(cb){cb.checked=false;});
     applyFilters();
