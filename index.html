@@ -90,6 +90,12 @@ grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content
 .cardnote{background:#eef4ff;border-left:3px solid #1a73e8;border-radius:3px;padding:3px 6px;font-size:12px;margin:3px 0;line-height:1.35}
 .cardlinks{font-size:12px;margin-top:4px}
 .cardempty{grid-column:1/-1;text-align:center;color:#777;padding:46px 10px}
+.cardbar{grid-column:1/-1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:7px 10px;margin-bottom:2px}
+.cardbar label{font-size:13px;color:#555}
+.cardbar select{font-size:13px;padding:3px 5px;border:1px solid #ccc;border-radius:5px}
+.cardbar .dir{font-size:13px;padding:3px 9px;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;cursor:pointer}
+.cardbar .cnt{font-size:12px;color:#777;margin-left:auto}
 .card .showmap{margin-top:8px;font-size:12px;padding:3px 9px;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;cursor:pointer}
 </style></head><body>
 <div class="search">
@@ -889,6 +895,44 @@ function render(data){
   })();
   function saveCardFields(){try{localStorage.setItem('hh_cardfields',JSON.stringify(cardFields));}catch(e){}}
 
+  // Sort specs: each maps a sort key to the field that must be VISIBLE for the
+  // option to appear, an accessor, and a type. So you can only sort by data you
+  // can actually see on the card. 'address' is always available.
+  var SORT_SPECS=[
+    {k:'address',label:'Address (A-Z)',field:null,type:'str',get:function(p){return String(p.address||'').toLowerCase();}},
+    {k:'price',label:'Price',field:'price',type:'num',get:function(p){return p.priceNum;}},
+    {k:'fit',label:'Fit score',field:'fit',type:'num',get:function(p){return p.fitMet;}},
+    {k:'beds',label:'Beds',field:'beds',type:'num',get:function(p){return p.bedsNum;}},
+    {k:'baths',label:'Baths',field:'baths',type:'num',get:function(p){return p.bathsNum;}},
+    {k:'sqft',label:'Sqft',field:'sqft',type:'num',get:function(p){return p.sqftNum;}},
+    {k:'acres',label:'Acreage',field:'lot',type:'num',get:function(p){return p.acresNum;}},
+    {k:'go',label:'GO drive (min)',field:'go',type:'num',get:function(p){return p.goMinNum;}},
+    {k:'due',label:'Due at closing',field:'due',type:'num',get:function(p){return p.dueNum;}},
+    {k:'pit',label:'Monthly PIT',field:'pit',type:'num',get:function(p){return p.pitNum;}},
+    {k:'mark',label:'Mark rating',field:'ratings',type:'num',get:function(p){var n=parseInt(p.markRank,10);return isNaN(n)?null:n;}},
+    {k:'katie',label:'Katie rating',field:'ratings',type:'num',get:function(p){var n=parseInt(p.katieRank,10);return isNaN(n)?null:n;}}];
+  function sortSpec(k){for(var i=0;i<SORT_SPECS.length;i++)if(SORT_SPECS[i].k===k)return SORT_SPECS[i];return null;}
+  var cardSort='address', cardSortDir=1;  // dir: 1 asc, -1 desc
+  (function(){try{
+    var s=localStorage.getItem('hh_cardsort'); if(s)cardSort=s;
+    var d=localStorage.getItem('hh_cardsortdir'); if(d)cardSortDir=parseInt(d,10)||1;
+  }catch(e){}})();
+  function saveCardSort(){try{localStorage.setItem('hh_cardsort',cardSort);
+    localStorage.setItem('hh_cardsortdir',String(cardSortDir));}catch(e){}}
+  function sortCards(list){
+    var spec=sortSpec(cardSort);
+    if(!spec)return list;
+    var dir=cardSortDir;
+    return list.slice().sort(function(a,b){
+      var va=spec.get(a), vb=spec.get(b);
+      // Missing values always sort to the bottom, regardless of direction.
+      var ma=(va==null||(spec.type==='num'&&isNaN(va))), mb=(vb==null||(spec.type==='num'&&isNaN(vb)));
+      if(ma&&mb)return 0; if(ma)return 1; if(mb)return -1;
+      if(spec.type==='num')return (va-vb)*dir;
+      return va<vb?-1*dir:(va>vb?1*dir:0);
+    });
+  }
+
   var cardMode=false, _lastShown=[];
   function setCardMode(on){
     cardMode=on;
@@ -902,16 +946,40 @@ function render(data){
   function renderCards(list){
     var host=document.getElementById('cards'); if(!host)return;
     host.innerHTML='';
+    // Sort bar: options limited to fields currently VISIBLE on the card (so you
+    // only sort by data you can see). Address is always offered.
+    var bar=document.createElement('div'); bar.className='cardbar';
+    var opts='';
+    SORT_SPECS.forEach(function(s){
+      if(s.field===null||cardFields[s.field])
+        opts+='<option value="'+s.k+'"'+(s.k===cardSort?' selected':'')+'>'+s.label+'</option>';
+    });
+    // If the active sort's field was just hidden, fall back to address.
+    if(cardSort!=='address'){var sp=sortSpec(cardSort); if(sp&&sp.field&&!cardFields[sp.field]){cardSort='address';saveCardSort();
+      opts=opts.replace('value="address"','value="address" selected');}}
+    bar.innerHTML='<label>Sort by</label><select id="cardSortSel">'+opts+'</select>'
+      +'<button class="dir" id="cardSortDir" title="Toggle ascending/descending">'
+      +(cardSortDir>0?'\u2191 Asc':'\u2193 Desc')+'</button>'
+      +'<span class="cnt">'+(list?list.length:0)+' shown</span>';
+    host.appendChild(bar);
+    bar.querySelector('#cardSortSel').addEventListener('change',function(){
+      cardSort=this.value;saveCardSort();renderCards(_lastShown);});
+    bar.querySelector('#cardSortDir').addEventListener('click',function(){
+      cardSortDir=-cardSortDir;saveCardSort();renderCards(_lastShown);});
     if(!list||!list.length){
-      host.innerHTML='<div class="cardempty">No listings match the current filters.</div>';return;}
-    list.forEach(function(p){host.appendChild(makeCard(p));});
+      var em=document.createElement('div');em.className='cardempty';
+      em.textContent='No listings match the current filters.';host.appendChild(em);return;}
+    sortCards(list).forEach(function(p){host.appendChild(makeCard(p));});
   }
   function makeCard(p){
     var c=document.createElement('div'); c.className='card';
     var st=(p.status||'').toLowerCase();
     var rejected=st.indexOf('reject')>=0||st.indexOf('pass')>=0||st==='no';
     var h='';
-    if(cardFields.image&&p.image)h+='<img class="cardimg" src="'+e(p.image)+'" loading="lazy">';
+    if(cardFields.image&&p.image){
+      var imgTag='<img class="cardimg" src="'+e(p.image)+'" loading="lazy">';
+      h+=p.link?'<a href="'+e(p.link)+'" target="_blank" title="Open listing">'+imgTag+'</a>':imgTag;
+    }
     h+='<div class="cardbody"><div class="cardaddr">'+e(p.address)+'</div>';
     if(cardFields.status&&rejected)h+='<div class="cardno">'+e(p.rejBy||'Someone')
       +' said no'+(p.rejReason?': '+e(p.rejReason):'')+'</div>';
@@ -944,7 +1012,7 @@ function render(data){
       lk.push('<a href="'+gm+'" target="_blank">Maps</a>');
       h+='<div class="cardlinks">'+lk.join(' | ')+'</div>';
     }
-    h+='<button class="showmap">Show on map</button></div>';
+    h+='<button class="showmap">Show On Map To Edit</button></div>';
     c.innerHTML=h;
     c.querySelector('.showmap').onclick=function(){
       setCardMode(false);
