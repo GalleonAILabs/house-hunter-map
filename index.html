@@ -76,7 +76,7 @@ position:sticky;top:0;background:#fff;border-radius:8px 8px 0 0}
 #viewToggle{font-size:14px;padding:4px 8px;cursor:pointer;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;margin-left:4px}
 #cards{position:absolute;top:0;left:0;right:0;bottom:0;z-index:500;background:#f2f3f5;
 overflow:auto;display:none;padding:62px 12px 18px;box-sizing:border-box;
-grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content:start}
+grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content:start;grid-auto-rows:max-content}
 .card{background:#fff;border-radius:10px;box-shadow:0 1px 5px rgba(0,0,0,.15);overflow:hidden;display:flex;flex-direction:column}
 .cardimg{width:100%;height:150px;object-fit:cover;background:#e8e8e8;display:block}
 .cardbody{padding:9px 11px 11px}
@@ -865,6 +865,110 @@ function render(data){
   row('GO stations',true,function(v){showStn=v;applyFilters();},null,'layer:stn');
   row('Highway 413',true,function(v){showHwy=v;applyFilters();},null,'layer:hwy');
 
+  // ---- Card view -------------------------------------------------------
+  // A second way to look at the SAME filtered set: full listing cards in a
+  // grid instead of pins. The "Card fields" picker below lets Mark choose
+  // exactly which data items appear on each card. State persists per device.
+  var CARD_FIELDS=[
+    {k:'image',label:'Photo'},{k:'price',label:'Price'},
+    {k:'fit',label:'Fit score'},{k:'beds',label:'Beds'},
+    {k:'baths',label:'Baths'},{k:'sqft',label:'Sqft'},
+    {k:'lot',label:'Lot size / acreage'},{k:'go',label:'Nearest GO + commute'},
+    {k:'features',label:'Features'},{k:'due',label:'Due at closing'},
+    {k:'pit',label:'Monthly PIT'},{k:'ratings',label:'Katie / Mark ratings'},
+    {k:'notes',label:'Notes'},{k:'status',label:'Status / said-no'},
+    {k:'links',label:'Listing / Research / Maps links'}];
+  var CARD_DEFAULT={image:1,price:1,fit:1,beds:1,baths:1,sqft:1,go:1,
+    ratings:1,links:1,status:1,lot:0,due:0,pit:0,features:0,notes:0};
+  var cardFields={};
+  (function(){
+    var raw; try{raw=localStorage.getItem('hh_cardfields');}catch(e){}
+    var saved=null; try{saved=raw?JSON.parse(raw):null;}catch(e){}
+    CARD_FIELDS.forEach(function(f){
+      cardFields[f.k]=(saved&&(f.k in saved))?!!saved[f.k]:!!CARD_DEFAULT[f.k];});
+  })();
+  function saveCardFields(){try{localStorage.setItem('hh_cardfields',JSON.stringify(cardFields));}catch(e){}}
+
+  var cardMode=false, _lastShown=[];
+  function setCardMode(on){
+    cardMode=on;
+    var host=document.getElementById('cards');
+    if(host)host.style.display=on?'grid':'none';
+    var btn=document.getElementById('viewToggle');
+    if(btn)btn.textContent=on?'Map view':'Card view';
+    try{localStorage.setItem('hh_cardmode',on?'1':'0');}catch(e){}
+    if(on)renderCards(_lastShown);
+  }
+  function renderCards(list){
+    var host=document.getElementById('cards'); if(!host)return;
+    host.innerHTML='';
+    if(!list||!list.length){
+      host.innerHTML='<div class="cardempty">No listings match the current filters.</div>';return;}
+    list.forEach(function(p){host.appendChild(makeCard(p));});
+  }
+  function makeCard(p){
+    var c=document.createElement('div'); c.className='card';
+    var st=(p.status||'').toLowerCase();
+    var rejected=st.indexOf('reject')>=0||st.indexOf('pass')>=0||st==='no';
+    var h='';
+    if(cardFields.image&&p.image)h+='<img class="cardimg" src="'+e(p.image)+'" loading="lazy">';
+    h+='<div class="cardbody"><div class="cardaddr">'+e(p.address)+'</div>';
+    if(cardFields.status&&rejected)h+='<div class="cardno">'+e(p.rejBy||'Someone')
+      +' said no'+(p.rejReason?': '+e(p.rejReason):'')+'</div>';
+    if(cardFields.price)h+='<div class="cardprice">'+e(p.price)+'</div>';
+    var facts=[];
+    if(cardFields.fit)facts.push('<span>Fit <b>'+e(p.fit||'-')+'</b></span>');
+    if(cardFields.beds)facts.push('<span><b>'+e(p.beds||'-')+'</b> bd</span>');
+    if(cardFields.baths)facts.push('<span><b>'+e(p.baths||'-')+'</b> ba</span>');
+    if(cardFields.sqft)facts.push('<span><b>'+e(p.sqft||'-')+'</b> sqft</span>');
+    if(facts.length)h+='<div class="cardfacts">'+facts.join('')+'</div>';
+    if(cardFields.lot)h+='<div class="cardline">Lot: '+e(p.lot||'-')
+      +(p.acres?' ('+e(p.acres)+' ac)':'')+'</div>';
+    if(cardFields.go)h+='<div class="cardline">GO: '+e(p.go||'-')
+      +(p.goMin?' ('+e(p.goMin)+' min)':'')+'</div>';
+    if(cardFields.due)h+='<div class="cardline">Due at closing: '+e(p.dueClosing||'-')+'</div>';
+    if(cardFields.pit)h+='<div class="cardline">Monthly PIT: '+e(p.pit||'-')+'</div>';
+    if(cardFields.features&&p.features)h+='<div class="cardline">'+e(p.features)+'</div>';
+    if(cardFields.ratings)h+='<div class="cardrate">Katie '+stars(p.katieRank)
+      +' &nbsp; Mark '+stars(p.markRank)+'</div>';
+    if(cardFields.notes){
+      var cm=stripResearch(p.markComments), ck=stripResearch(p.katieComments);
+      if(cm||ck)h+='<div class="cardnote">'+(cm?'<div><b>Mark:</b> '+e(cm)+'</div>':'')
+        +(ck?'<div><b>Katie:</b> '+e(ck)+'</div>':'')+'</div>';
+    }
+    if(cardFields.links){
+      var gm='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.address);
+      var lk=[];
+      if(p.link)lk.push('<a href="'+e(p.link)+'" target="_blank">Listing</a>');
+      if(p.doc)lk.push('<a href="'+e(p.doc)+'" target="_blank">Research</a>');
+      lk.push('<a href="'+gm+'" target="_blank">Maps</a>');
+      h+='<div class="cardlinks">'+lk.join(' | ')+'</div>';
+    }
+    h+='<button class="showmap">Show on map</button></div>';
+    c.innerHTML=h;
+    c.querySelector('.showmap').onclick=function(){
+      setCardMode(false);
+      for(var i=0;i<pins.length;i++){if(pins[i].prop===p){
+        map.setView([p.lat,p.lon],13);
+        try{pins[i].marker.openPopup();}catch(ex){} break;}}
+    };
+    return c;
+  }
+  document.getElementById('viewToggle').onclick=function(){setCardMode(!cardMode);};
+
+  // Card-fields picker (lives in the filter panel).
+  hdr('Card fields (card view)');
+  CARD_FIELDS.forEach(function(f){
+    var d=document.createElement('label'); d.className='frow';
+    d.innerHTML='<input type="checkbox" '+(cardFields[f.k]?'checked':'')+'> <span>'+f.label+'</span>';
+    var cb=d.querySelector('input');
+    cb.addEventListener('change',function(){
+      cardFields[f.k]=this.checked; saveCardFields();
+      if(cardMode)renderCards(_lastShown);
+    });
+    fp.appendChild(d);
+  });
+
   // Switching "I am" changes whose rating drives every pin, so rebuild ALL pins
   // (Mark's numbers vs Katie's), not just re-filter. Rejected stays grey for both.
   function repaintAllPins(){
@@ -878,6 +982,7 @@ function render(data){
   whoSel.addEventListener('change',repaintAllPins);
   loadFilters();
   applyFilters();
+  try{if(localStorage.getItem('hh_cardmode')==='1')setCardMode(true);}catch(e){}
   if(b.length)map.fitBounds(b,{padding:[60,60],maxZoom:12});
 }
 render(DATA);
