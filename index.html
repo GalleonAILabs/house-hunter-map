@@ -527,7 +527,7 @@ function render(data){
   +(p.link?'<a href="'+e(p.link)+'" target="_blank">Listing</a> ':'')
   +(p.doc?'| <a href="'+e(p.doc)+'" target="_blank">Research</a> ':'')
   +'| <a href="'+gm+'" target="_blank">Google Maps</a>'
-  +(p.image?'<br><img src="'+e(p.image)+'">':'');
+  +(p.image?'<br>'+(p.link?'<a href="'+e(p.link)+'" target="_blank" title="Open listing"><img src="'+e(p.image)+'"></a>':'<img src="'+e(p.image)+'">'):'');
   div.innerHTML+=buildActs(p);
   var marker, tier;
   // Research pins get a bright ring so they pop on the map: amber = pending,
