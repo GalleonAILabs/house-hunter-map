@@ -977,6 +977,34 @@ function render(data){
       em.textContent='No listings match the current filters.';host.appendChild(em);return;}
     sortCards(list).forEach(function(p){host.appendChild(makeCard(p));});
   }
+  // Native share via the Web Share API: on a phone this opens the OS share
+  // sheet (email, SMS, WhatsApp, etc.). Falls back to clipboard copy, then to a
+  // prompt, when navigator.share/clipboard are unavailable (e.g. desktop). The
+  // shared URL is the listing if present, else a Google Maps search.
+  function shareProp(p,msgEl){
+    var gm='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.address);
+    var url=p.link?String(p.link):gm;
+    var bits=[p.address];
+    if(p.price)bits.push(p.price);
+    if(p.fit)bits.push('Fit '+p.fit);
+    if(p.beds||p.baths)bits.push(e(p.beds)+' bd / '+e(p.baths)+' ba');
+    if(p.go)bits.push('GO: '+p.go+(p.goMin?' ('+p.goMin+' min)':''));
+    var text=bits.join('\n');
+    function ok(m){if(msgEl){msgEl.textContent=m||'Shared';setTimeout(function(){msgEl.textContent='';},2500);}}
+    if(navigator.share){
+      navigator.share({title:String(p.address||'Listing'),text:text,url:url})
+        .then(function(){ok('Shared');})
+        .catch(function(){});  // user dismissed the sheet: stay quiet
+      return;
+    }
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(payload).then(function(){ok('Link copied');},
+        function(){window.prompt('Copy this listing:',payload);});
+    }else{
+      window.prompt('Copy this listing:',payload);
+    }
+  }
   function makeCard(p){
     var c=document.createElement('div'); c.className='card';
     var st=(p.status||'').toLowerCase();
