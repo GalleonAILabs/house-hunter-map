@@ -224,6 +224,7 @@ function buildActs(p){
     +'<button class="abtn rsch">Request research</button>'
     +'<button class="abtn revd" style="display:none;border-color:#137333;color:#137333">Mark reviewed</button></div>'
     +'<div class="actrow"><button class="abtn nob sayno">Say no</button>'
+    +'<button class="abtn shareb" title="Share">\ud83d\udd17 Share</button>'
     +'<span class="amsg"></span></div></div>';
 }
 // Research flag lives INSIDE the comments columns as a tag, so the existing
@@ -366,6 +367,12 @@ function wireActs(root,p){
         +'\n\nPlease set Status=Rejected, Rejected By='+who
         +', Reject Reason as above.');
     }
+  };
+  // Share: deep link back to this property's House Hunter card. Uses the same
+  // shareProp the card view uses (exposed on window by render()).
+  var shareb=box.querySelector('.shareb');
+  if(shareb)shareb.onclick=function(){
+    if(window._shareProp)window._shareProp(p,msg);
   };
 }
 
@@ -1009,6 +1016,7 @@ function render(data){
       window.prompt('Copy this listing:',payload);
     }
   }
+  window._shareProp=shareProp;  // let the map popup (wireActs) share too
   function makeCard(p){
     var c=document.createElement('div'); c.className='card';
     c.setAttribute('data-row',p.row);
