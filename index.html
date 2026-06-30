@@ -953,6 +953,7 @@ function render(data){
     {k:'sqft',label:'Sqft',field:'sqft',type:'num',get:function(p){return p.sqftNum;}},
     {k:'acres',label:'Acreage',field:'lot',type:'num',get:function(p){return p.acresNum;}},
     {k:'go',label:'GO drive (min)',field:'go',type:'num',get:function(p){return p.goMinNum;}},
+    {k:'gototal',label:'Total travel time',field:'go',type:'num',get:function(p){var n=parseFloat(p.goTotal);return isNaN(n)?null:n;}},
     {k:'due',label:'Cash to close',field:'due',type:'num',get:function(p){return p.dueNum;}},
     {k:'pit',label:'Monthly PIT',field:'pit',type:'num',get:function(p){return p.pitNum;}},
     {k:'mark',label:'Mark rating',field:'ratings',type:'num',get:function(p){var n=parseInt(p.markRank,10);return isNaN(n)?null:n;}},
