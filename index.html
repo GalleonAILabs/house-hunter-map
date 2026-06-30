@@ -103,6 +103,7 @@ background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:7
 .cardbar .dir{font-size:13px;padding:3px 9px;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;cursor:pointer}
 .cardbar .cnt{font-size:12px;color:#777;margin-left:auto}
 .card .showmap{margin-top:8px;font-size:12px;padding:3px 9px;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;cursor:pointer}
+.card.cardhi{outline:3px solid #1a73e8;box-shadow:0 0 0 4px rgba(26,115,232,.25),0 2px 10px rgba(0,0,0,.2)}
 </style></head><body>
 <div class="search">
 <input id="q" type="text" placeholder="Search town or address" autocomplete="off">
@@ -980,10 +981,13 @@ function render(data){
   // Native share via the Web Share API: on a phone this opens the OS share
   // sheet (email, SMS, WhatsApp, etc.). Falls back to clipboard copy, then to a
   // prompt, when navigator.share/clipboard are unavailable (e.g. desktop). The
-  // shared URL is the listing if present, else a Google Maps search.
+  // shared URL is a DEEP LINK back to this House Hunter card (opens the map in
+  // card view and jumps to this property), NOT the raw realm listing.
+  function cardDeepLink(p){
+    return location.origin+location.pathname+'?p='+encodeURIComponent(p.row);
+  }
   function shareProp(p,msgEl){
-    var gm='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.address);
-    var url=p.link?String(p.link):gm;
+    var url=cardDeepLink(p);
     var bits=[p.address];
     if(p.price)bits.push(p.price);
     if(p.fit)bits.push('Fit '+p.fit);
@@ -1007,6 +1011,7 @@ function render(data){
   }
   function makeCard(p){
     var c=document.createElement('div'); c.className='card';
+    c.setAttribute('data-row',p.row);
     var st=(p.status||'').toLowerCase();
     var rejected=st.indexOf('reject')>=0||st.indexOf('pass')>=0||st==='no';
     var h='';
@@ -1090,6 +1095,23 @@ function render(data){
   loadFilters();
   applyFilters();
   try{if(localStorage.getItem('hh_cardmode')==='1')setCardMode(true);}catch(e){}
+  // Deep link: ?p=<row> opens card view and jumps to that property's card.
+  // This is what the card's Share button produces, so a shared link lands the
+  // recipient on the exact House Hunter card, not the raw realm listing.
+  (function(){
+    var m=location.search.match(/[?&]p=([^&]+)/);
+    if(!m)return;
+    var row=decodeURIComponent(m[1]);
+    setCardMode(true);
+    setTimeout(function(){
+      var card=document.querySelector('#cards .card[data-row="'+row+'"]');
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.classList.add('cardhi');
+        setTimeout(function(){card.classList.remove('cardhi');},4000);
+      }
+    },150);
+  })();
   if(b.length)map.fitBounds(b,{padding:[60,60],maxZoom:12});
 }
 render(DATA);
