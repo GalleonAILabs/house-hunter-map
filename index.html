@@ -73,10 +73,28 @@ position:sticky;top:0;background:#fff;border-radius:8px 8px 0 0}
 .acts .abtn{font-size:13px;padding:3px 9px;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;cursor:pointer}
 .acts .nob{border-color:#c5221f;color:#c5221f}
 .acts .amsg{font-size:12px;color:#137333;margin-left:4px}
+#viewToggle{font-size:14px;padding:4px 8px;cursor:pointer;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;margin-left:4px}
+#cards{position:absolute;top:0;left:0;right:0;bottom:0;z-index:500;background:#f2f3f5;
+overflow:auto;display:none;padding:62px 12px 18px;box-sizing:border-box;
+grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content:start}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 5px rgba(0,0,0,.15);overflow:hidden;display:flex;flex-direction:column}
+.cardimg{width:100%;height:150px;object-fit:cover;background:#e8e8e8;display:block}
+.cardbody{padding:9px 11px 11px}
+.cardaddr{font-weight:600;font-size:14px;margin-bottom:2px}
+.cardprice{font-size:17px;font-weight:700;color:#137333;margin:3px 0}
+.cardno{color:#c5221f;font-weight:600;font-size:12px;margin:2px 0}
+.cardfacts{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:12px;color:#555;margin:4px 0}
+.cardfacts b{color:#222}
+.cardline{font-size:12px;color:#444;margin:2px 0}
+.cardrate{font-size:13px;margin:4px 0}
+.cardnote{background:#eef4ff;border-left:3px solid #1a73e8;border-radius:3px;padding:3px 6px;font-size:12px;margin:3px 0;line-height:1.35}
+.cardlinks{font-size:12px;margin-top:4px}
+.cardempty{grid-column:1/-1;text-align:center;color:#777;padding:46px 10px}
+.card .showmap{margin-top:8px;font-size:12px;padding:3px 9px;border:1px solid #ccc;border-radius:5px;background:#f7f7f7;cursor:pointer}
 </style></head><body>
 <div class="search">
 <input id="q" type="text" placeholder="Search town or address" autocomplete="off">
-<button id="qgo">Go</button><button id="qclear">Clear pin</button><span class="smsg" id="smsg"></span>
+<button id="qgo">Go</button><button id="qclear">Clear pin</button><button id="viewToggle">Card view</button><span class="smsg" id="smsg"></span>
 </div>
 <div class="panel" id="panel">
 <div class="ptitle" id="ptoggle"><span class="pfull"><b>House Hunter by Galleon AI Labs</b> <span id="count">loading...</span></span><span class="pmin">&#128100; <span id="pminName">Mark</span></span> <span id="pchev">&#9660;</span></div>
@@ -93,6 +111,7 @@ I am: <select id="who">
 <i style="background:#1a73e8"></i>unrated by you
 <i style="background:#9e9e9e"></i>said no</div></div></div>
 <div id="map"></div>
+<div id="cards"></div>
 <div class="fpanel" id="fpanel">
   <div class="ftitle" id="ftoggle">Filters <span id="fchev">&#9660;</span></div>
   <div id="filterBody"></div>
@@ -626,7 +645,7 @@ function render(data){
   }
   function applyFilters(){
     gProps.clearLayers();
-    var shown=0;
+    var shown=0; var shownProps=[];
     pins.forEach(function(pin){
       if(!catState[pin.tier])return;
       var mr=myRating(pin);
@@ -643,13 +662,15 @@ function render(data){
       if(researchFilter==='any' && !(pin.research==='pending'||pin.research==='ready'))return;
       if(featText && pin.features.indexOf(featText)<0)return;
       if(featExclude && pin.features.indexOf(featExclude)>=0)return;
-      gProps.addLayer(pin.marker);shown++;
+      gProps.addLayer(pin.marker);shown++;shownProps.push(pin.prop);
     });
     if(showLines)gLines.addTo(map); else map.removeLayer(gLines);
     if(showStn)gStn.addTo(map); else map.removeLayer(gStn);
     if(showHwy)gHwy.addTo(map); else map.removeLayer(gHwy);
     var cnt=document.getElementById('count');
     if(cnt)cnt.textContent='('+shown+' of '+pins.length+' shown)';
+    _lastShown=shownProps;
+    if(cardMode)renderCards(shownProps);
     saveFilters();
   }
   // Persist the full filter state so a page refresh (the only way to pull fresh
